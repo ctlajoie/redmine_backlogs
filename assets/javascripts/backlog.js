@@ -28,6 +28,8 @@ RB.Backlog = RB.Object.create({
                    placeholder: 'placeholder',
                    forcePlaceholderSize: true,
                    dropOnEmpty: true,
+                   distance: 3,
+                   cancel: '.editing',
                    start: this.dragStart,
                    stop: this.dragStop,
                    update: function(e,u){ self.dragComplete(e, u) }
