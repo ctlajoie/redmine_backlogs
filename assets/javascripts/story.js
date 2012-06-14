@@ -12,7 +12,7 @@ RB.Story = RB.Object.create(RB.Issue, RB.EditableInplace, {
     // Associate this object with the element for later retrieval
     j.data('this', this);
 
-    j.find(".editable").live('mouseup', this.handleClick);
+    j.delegate('.editable', 'click', this.handleClick);
   },
 
   afterUpdate: function(data, textStatus, xhr){
