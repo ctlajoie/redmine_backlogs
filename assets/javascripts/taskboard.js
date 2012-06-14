@@ -26,14 +26,19 @@ RB.Taskboard = RB.Object.create(RB.Model, {
       alert("There are no task states. Please check the workflow of your tasks tracker in the administration section.");
       return;
     }
-    // Initialize task lists
-    tasks_lists.sortable({ 
-      connectWith: '#tasks .list', 
+
+    var sortableOpts = {
       placeholder: 'placeholder',
+      distance: 3,
       start: self.dragStart,
       stop: self.dragStop,
       update: self.dragComplete
-    });
+    };
+
+    // Initialize task lists
+    tasks_lists.sortable(RB.$.extend({
+      connectWith: '#tasks .list'
+    }, sortableOpts));
 
     // Initialize each task in the board
     j.find('.task').each(function(index){
@@ -45,13 +50,9 @@ RB.Taskboard = RB.Object.create(RB.Model, {
 
 
     // Initialize impediment lists
-    j.find("#impediments .list").sortable({ 
-      connectWith: '#impediments .list', 
-      placeholder: 'placeholder',
-      start: self.dragStart,
-      stop: self.dragStop,
-      update: self.dragComplete
-    });
+    j.find("#impediments .list").sortable(RB.$.extend({
+      connectWith: '#impediments .list'
+    }, sortableOpts));
 
     // Initialize each task in the board
     j.find('.impediment').each(function(index){
