@@ -35,21 +35,25 @@ module BacklogsPlugin
           end
 
           url_options = {
-            :only_path  => false,
+            :only_path  => true,
             :controller => :rb_hooks_render,
             :action     => :view_issues_sidebar,
-            :project_id => project.identifier,
-            :host => context[:request].host_with_port,
-            :protocol => context[:request].ssl? ? 'https' : 'http'
+            :project_id => project.identifier
           }
           url_options[:sprint_id] = sprint_id if sprint_id
+          if Rails::VERSION::MAJOR < 3
+            url = '' #actionpack-2.3.14/lib/action_controller/url_rewriter.rb is injecting relative_url_root
+          else
+            url = Redmine::Utils.relative_url_root #actionpack-3* is not???
+          end
+          url += url_for(url_options)
 
           # Why can't I access protect_against_forgery?
           return %{
             <div id="backlogs_view_issues_sidebar"></div>
             <script type="text/javascript">
               jQuery(document).ready(function() {
-                jQuery('#backlogs_view_issues_sidebar').load('#{url_for(url_options)}');
+                jQuery('#backlogs_view_issues_sidebar').load('#{url}');
               });
             </script>
           }
@@ -303,9 +307,11 @@ module BacklogsPlugin
                       Backlogs.setting[:timelog_from_taskboard]=='enabled'
 
         if issue.is_task? && User.current.allowed_to?(:update_remaining_hours, time_entry.project) != nil
-          remaining_hours = params[:remaining_hours].gsub(',','.').to_f
-          if remaining_hours != issue.remaining_hours
-            issue.journalized_update_attribute(:remaining_hours, remaining_hours) if time_entry.save
+          if params.include?("remaining_hours")
+            remaining_hours = params[:remaining_hours].gsub(',','.').to_f
+            if remaining_hours != issue.remaining_hours
+              issue.journalized_update_attribute(:remaining_hours, remaining_hours) if time_entry.save
+            end
           end
         end
       end

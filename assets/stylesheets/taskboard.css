@@ -126,6 +126,10 @@ See RB.Taskboard.initialize()
 .story .id a{
   float:right;
 }
+.story .id .remaining{
+  float:right;
+  margin:0 .3em;
+}
 .story .id .assignee{
   font-weight: bold;
 }

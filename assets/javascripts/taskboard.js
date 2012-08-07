@@ -21,24 +21,25 @@ RB.Taskboard = RB.Object.create(RB.Model, {
     self.updateColWidths();
     RB.$("#col_width input").bind('keyup', function(e){ if(e.which==13) self.updateColWidths() });
 
-    var tasks_lists = j.find("#tasks .list");
+    // Initialize task lists, restricting drop to the story
+    var tasks_lists =j.find('.story-swimlane');
     if (!tasks_lists || !tasks_lists.length) {
       alert("There are no task states. Please check the workflow of your tasks tracker in the administration section.");
       return;
     }
 
-    var sortableOpts = {
-      placeholder: 'placeholder',
-      distance: 3,
-      start: self.dragStart,
-      stop: self.dragStop,
-      update: self.dragComplete
-    };
+    tasks_lists.each(function(index){
+      var id = '#' + RB.$(this).attr('id') + ' .list';
 
-    // Initialize task lists
-    tasks_lists.sortable(RB.$.extend({
-      connectWith: '#tasks .list'
-    }, sortableOpts));
+      j.find(id).sortable({
+        connectWith: id, 
+        placeholder: 'placeholder',
+        distance: 3,
+        start: self.dragStart,
+        stop: self.dragStop,
+        update: self.dragComplete
+      });
+    });
 
     // Initialize each task in the board
     j.find('.task').each(function(index){
@@ -50,9 +51,14 @@ RB.Taskboard = RB.Object.create(RB.Model, {
 
 
     // Initialize impediment lists
-    j.find("#impediments .list").sortable(RB.$.extend({
-      connectWith: '#impediments .list'
-    }, sortableOpts));
+    j.find("#impediments .list").sortable({
+      connectWith: '#impediments .list',
+      placeholder: 'placeholder',
+      distance: 3,
+      start: self.dragStart,
+      stop: self.dragStop,
+      update: self.dragComplete
+    });
 
     // Initialize each task in the board
     j.find('.impediment').each(function(index){
