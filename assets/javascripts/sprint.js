@@ -14,7 +14,9 @@ RB.Sprint = RB.Object.create(RB.Model, RB.EditableInplace, {
     // Associate this object with the element for later retrieval
     j.data('this', this);
 
-    j.delegate('.editable', 'click', this.handleClick);
+    if (RB.permissions.update_sprints) {
+      j.delegate('.editable', 'click', this.handleClick);
+    }
   },
 
   beforeSave: function(){
@@ -35,20 +37,20 @@ RB.Sprint = RB.Object.create(RB.Model, RB.EditableInplace, {
 
   saveDirectives: function(){
     var j = this.$;
-
+    var url;
     var data = j.find('.editor').serialize();
 
     if( this.isNew() ){
-      var url = RB.urlFor( 'create_sprint' );
+      url = RB.urlFor( 'create_sprint' );
     } else {
-      var url = RB.urlFor( 'update_sprint', { id: this.getID() } );
-      data += "&_method=put"
+      url = RB.urlFor( 'update_sprint', { id: this.getID() } );
+      data += "&_method=put";
     }
 
     return {
       url : url,
       data: data
-    }
+    };
   },
 
   beforeSaveDragResult: function(){
@@ -65,5 +67,24 @@ RB.Sprint = RB.Object.create(RB.Model, RB.EditableInplace, {
 
   afterUpdate: function(data, textStatus, xhr){
     this.getBacklog().data('this').drawMenu();
+  },
+
+  editorDisplayed: function(editor){
+    var name = editor.find('.name.editor');
+    name.width(Math.max(300, parseInt(name.attr('_rb_width'), 10)));
+    var d = new Date();
+    var now, start, end;
+    start = editor.find('.sprint_start_date.editor');
+    if (start.val()=='no start') {
+      now = RB.$.datepicker.formatDate('yy-mm-dd', new Date());
+      start.val(now);
+    }
+    end = editor.find('.effective_date.editor');
+    if (end.val()=='no end') {
+      now = new Date();
+      now.setDate(now.getDate() + 14);
+      now = RB.$.datepicker.formatDate('yy-mm-dd', now);
+      end.val(now);
+    }
   }
 });

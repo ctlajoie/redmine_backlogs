@@ -182,12 +182,19 @@ When /^I view the stories in the issues tab/ do
 end
 
 When /^I view the sprint notes$/ do
-  visit url_for(:controller => 'rb_wikis', :action => 'show', :sprint_id => @sprint.id, :only_path => true)
+  visit url_for(:controller => 'rb_wikis', :action => 'show', :sprint_id => current_sprint.id, :only_path => true)
 end
 
 When /^I edit the sprint notes$/ do
-  visit url_for(:controller => 'rb_wikis', :action => 'edit', :sprint_id => @sprint.id, :only_path => true)
+  visit url_for(:controller => 'rb_wikis', :action => 'edit', :sprint_id => current_sprint.id, :only_path => true)
 end
+
+#FIXME this does not work well.
+#When /^I follow "Wiki" from the menu of a Sprint$/ do
+#  #capybara will not follow our menu. so here a hack.
+#  page.find(:xpath, "//div[@id='main']//div[@class='menu']").click
+#  node = page.find(:xpath, "//div[@id='main']//a[contains(normalize-space(text()),'Wiki')]").click
+#end
 
 When /^the browser fetches (.+) updated since (\d+) (\w+) (.+)$/ do |object_type, how_many, period, direction|
   date = eval("#{ how_many }.#{ period }.#{ direction=='from now' ? 'from_now' : 'ago' }")
@@ -228,5 +235,21 @@ When /^I create an impediment named (.+) which blocks (.+?)(?: and (.+))?$/ do |
   end
   wait_for_ajax
   page.should have_xpath("//div", :text => impediment_name) #this did not work as documented. so wait explicitely for ajax above.
+end
+
+When /^I update the status of task (.+?) to (.+?)$/ do |task, state|
+  task = RbTask.find_by_subject(task)
+  task.should_not be_nil
+  @task_params = HashWithIndifferentAccess.new(task.attributes)
+  state = IssueStatus.find_by_name(state)
+  @task_params[:status_id] = state.id
+  page.driver.post(
+                      url_for(:controller => :rb_tasks,
+                              :action => :update,
+                              :id => @task_params[:id],
+                              :only_path => true),
+                      @task_params.merge({ "_method" => "put" })
+                  )
+  verify_request_status(200)
 end
 

@@ -1,5 +1,73 @@
+require 'timecop'
+require 'chronic'
+require 'cucumber/ast/background'
+require 'benchmark'
+
+class Time
+  def force_utc
+    Time.utc(self.year, self.month, self.day, self.hour, self.min, self.sec)
+  end
+end
+
+#module Cucumber
+#  module Ast
+#    class Background #:nodoc:
+#      alias_method :accept_org, :accept
+#
+#      def accept(visitor)
+#        #cache_file = self.feature.file + '.background'
+#        #return backlogs_load(cache_file) if File.exist?(cache_file) && File.mtime(cache_file) > File.mtime(self.feature.file)
+#        total = Benchmark.measure{ accept_org(visitor) }.total
+#        puts "Background #{File.basename(self.feature.file, File.extname(self.feature.file))}: #{total}s"
+#        #backlogs_dump(cache_file) if !File.exist?(cache_file) || File.mtime(cache_file) < File.mtime(self.feature.file)
+#      end
+#
+#      def backlogs_dump(filename)
+#        skip_tables = ["schema_info"]
+#        dump = {}
+#        (ActiveRecord::Base.connection.tables - skip_tables).each{|table_name|
+#          dump[table_name] = ActiveRecord::Base.connection.select_all("select * from #{table_name}")
+#        }
+#        File.open(filename, 'w'){|file| file.write(dump.to_yaml)}
+#      end
+#
+#      def backlogs_load(filename)
+#        dump = YAML::load_file(filename)
+#        dump.each_pair{|table_name, rows|
+#          ActiveRecord::Base.connection.execute("delete from #{table_name}")
+#          next unless rows.size > 0
+#          columns = rows[0].keys
+#          sql = "insert into #{table_name} (#{columns.join(',')}) values (#{columns.collect{|c| '%s'}.join(',')})"
+#          rows.each{|row|
+#            ActiveRecord::Base.connection.execute(sql % columns.collect{|c| ActiveRecord::Base::sanitize(row[c])})
+#          }
+#        }
+#      end
+#    end
+#  end
+#end
+
 def get_project(identifier)
   Project.find(identifier)
+end
+
+
+def current_sprint(name = nil)
+  if name.is_a?(Symbol)
+    case name
+    when :keep
+      # keep
+    else
+      raise "Unexpected command #{name.inspect}"
+    end
+  elsif name.is_a?(String)
+    @sprint =  RbSprint.find_by_name(name)
+  elsif name.nil?
+    @sprint = @sprint ? RbSprint.find_by_id(@sprint.id) : nil
+  else
+    raise "Unexpected #{name.class}"
+  end
+  return @sprint
 end
 
 def verify_request_status(status)
@@ -11,6 +79,49 @@ def verify_request_status(status)
   else
     true
   end
+end
+
+def set_now(time, options={})
+  return if time.to_s == ''
+  raise "options must be a hash" unless options.is_a?(Hash)
+
+  sprint = options.delete(:sprint)
+  reset = options.delete(:reset)
+  msg = options.delete(:msg).to_s
+
+  raise "Unexpected options: #{options.keys.inspect}" unless options.size == 0
+
+  msg = "#{msg}: " unless msg == ''
+
+  if (time.is_a?(Integer) || time =~ /^[0-9]+$/) && sprint
+    day = Integer(time)
+
+    if day < 0
+      time = sprint.days[1].to_time.force_utc + (day * 24*60*60)
+    else
+      time = sprint.days[day].to_time.force_utc
+    end
+    time += 60*60
+
+    # if we're setting the date to today again, don't do anything
+    return if time.force_utc.to_date == Date.today
+  else
+    time = Chronic.parse(time).force_utc
+  end
+  raise "#{msg}Time #{time} is not UTC" unless time.utc?
+
+  if reset
+    # don't test anything, just set the time
+  else
+    # Time zone must be set correctly, or ActiveRecord will store local, but retrieve UTC, which screws to Time.to_date. WTF people.
+    Time.zone = "UTC"
+    now = Time.now.utc
+
+    timediff = now - time
+    raise "#{msg}You may not travel back in time (it is now #{now}, and you want it to be #{time}" if timediff > 0
+  end
+
+  Timecop.travel(time)
 end
 
 def story_before(rank, project, sprint=nil)
@@ -112,11 +223,11 @@ def task_position(task)
 end
 
 def story_position(story)
-  p1 = RbStory.backlog(story.project, story.fixed_version_id).select{|s| s.id == story.id}[0].rank
+  p1 = RbStory.backlog(story.project, story.fixed_version_id, nil).select{|s| s.id == story.id}[0].rank
   p2 = story.rank
   p1.should == p2
 
-  s2 = RbStory.find_by_rank(p1, RbStory.find_options(:project => @project, :sprint => @sprint))
+  s2 = RbStory.find_by_rank(p1, RbStory.find_options(:project => @project, :sprint => current_sprint))
   s2.should_not be_nil
   s2.id.should == story.id
 

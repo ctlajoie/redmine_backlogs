@@ -29,7 +29,7 @@ def rb_common_routes(rb)
 
   rb_match rb, 'updated_items/:project_id', :to => 'rb_updated_items#show'
   rb_match rb, 'wikis/:sprint_id', :to => 'rb_wikis#show'
-  rb_match rb, 'wikis/:sprint_id', :to => 'rb_wikis#edit'
+  rb_match rb, 'wikis/:sprint_id/edit', :to => 'rb_wikis#edit'
   rb_match rb, 'issues/backlog/product/:project_id',
                :to => 'rb_queries#show'
   rb_match rb, 'issues/backlog/sprint/:sprint_id',
@@ -87,6 +87,8 @@ def rb_common_routes(rb)
           :to => 'rb_hooks_render#view_issues_sidebar'
   rb_match rb, 'hooks/sidebar/project/:project_id/:sprint_id',
           :to => 'rb_hooks_render#view_issues_sidebar'
+
+  rb_match rb, 'project/:project_id/backlogs', :to => 'rb_project_settings#project_settings'
 end
 
 if Rails::VERSION::MAJOR < 3

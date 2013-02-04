@@ -8,7 +8,7 @@ deps = Hash.new
 rails3 = Gem::Dependency.new('rails', '~>3.0')
 RAILS_VERSION_IS_3 = rails3 =~ deps['rails']
 
-gem "holidays", "=1.0.3"
+gem "holidays", "~>1.0.3"
 gem "icalendar"
 gem "nokogiri"
 gem "open-uri-cached"
@@ -17,11 +17,11 @@ gem 'json'
 gem "system_timer" if RUBY_VERSION =~ /^1\.8\./ && RUBY_PLATFORM =~ /darwin|linux/
 
 group :development do
-  gem "github-v3-api"
   gem "inifile"
 end
 
 group :test do
+  gem 'chronic'
   gem 'ZenTest', "=4.5.0" # 4.6.0 has a nasty bug that breaks autotest
   gem 'autotest-rails'
   if RAILS_VERSION_IS_3
@@ -38,8 +38,7 @@ group :test do
   end
   gem "database_cleaner"
   if RAILS_VERSION_IS_3
-    gem "gherkin", "=2.6.8"
-    gem 'hoe', '1.5.1'
+    gem "gherkin", "~> 2.6"
   else
     gem "gherkin", "~> 2.5.0"
   end
@@ -59,7 +58,7 @@ group :test do
   end
   gem "ruby-prof", :platforms => [:ruby]
   gem "spork"
-  gem "test-unit", "=1.2.3" if RUBY_VERSION >= "1.9"
+  gem "test-unit", "=1.2.3" if RUBY_VERSION >= "1.9" and ENV['IN_RBL_TESTENV'] == 'true'
   gem "timecop", '~> 0.3.5'
 end
 

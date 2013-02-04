@@ -12,7 +12,7 @@ RB.TaskboardUpdater = RB.Object.create(RB.BoardUpdater, {
     });
 
     // Process impediments
-    var items = RB.$(data).find('.impediment');
+    items = RB.$(data).find('.impediment');
     items.each(function(i, v){
       try {
         self.processItem(v, true);
@@ -27,7 +27,7 @@ RB.TaskboardUpdater = RB.Object.create(RB.BoardUpdater, {
     var newCell;
     var idPrefix = '#issue_';
     
-    if(RB.$(idPrefix + update.getID()).length==0){
+    if(RB.$(idPrefix + update.getID()).length===0){
       target = update;                                     // Create a new item
     } else {
       target = RB.$(idPrefix + update.getID()).data('this');  // Re-use existing item

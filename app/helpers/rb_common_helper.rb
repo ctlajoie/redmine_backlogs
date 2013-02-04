@@ -4,6 +4,8 @@ require 'nokogiri'
 module RbCommonHelper
   unloadable
 
+  include CustomFieldsHelper
+
   def assignee_id_or_empty(story)
     story.new_record? ? "" : story.assigned_to_id
   end
@@ -32,7 +34,7 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
   end
 
   def breadcrumb_separator
-    "<span class='separator'>&gt;</span>".html_safe
+    "<span class='separator'>&raquo;</span>".html_safe
   end
 
   def description_or_empty(story)
@@ -69,6 +71,10 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
 
   def record_id_or_empty(story)
     story.new_record? ? "" : story.id
+  end
+
+  def release_or_empty(story)
+    story.release_id.nil? ? "" : RbRelease.find(story.release_id).name
   end
 
   def sprint_status_id_or_default(sprint)
@@ -115,6 +121,19 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
     story.new_record? ? "" : story.tracker.name
   end
 
+  def project_name_or_empty(story)
+    story.new_record? ? "" : story.project.name
+  end
+
+  def custom_fields_or_empty(story)
+    return '' if story.new_record?
+    res = ''
+    story.custom_field_values.each{|value|
+      res += "<p><b>#{h(value.custom_field.name)}</b>: #{simple_format_without_paragraph(h(show_value(value)))}</p>"
+    }
+    res.html_safe
+  end
+
   def updated_on_with_milliseconds(story)
     date_string_with_milliseconds(story.updated_on, 0.001) unless story.blank?
   end
@@ -148,29 +167,21 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
 
     export = FCSV.generate(:col_sep => ';') do |csv|
       # csv header fields
-      headers = [ l(:label_date),
-                  l(:remaining_story_points),
-                  l(:ideal)
+      headers = [ l(:label_points_backlog),
+                  l(:label_points_added),
+                  l(:label_points_accepted)
                 ]
       csv << headers.collect {|c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
 
-      # csv lines
-      if (release.release_start_date != release.burndown_days[0])
-        fields = [release.release_start_date,
-                  release.initial_story_points.to_f.to_s.gsub('.', ','),
-                  release.initial_story_points.to_f.to_s.gsub('.', ',')]
-        csv << fields.collect {|c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
-      end
-      release.burndown_days.each do |rbd|
-        fields = [rbd.day,
-                  rbd.remaining_story_points.to_s.gsub('.', ','),
-                  release_burndown_interpolate(release, rbd.day).to_s.gsub('.', ',')
+      bd = release.burndown
+      lines = 0
+      lines = bd[:added_points].size unless bd[:added_points].nil?
+      for i in (0..(lines-1))
+        fields = [ bd[:added_points][i].to_s.gsub('.', ','),
+                   bd[:backlog_points][i].to_s.gsub('.', ','),
+                   bd[:closed_points][i].to_s.gsub('.', ',')
                  ]
-        csv << fields.collect {|c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
-      end
-      if (release.release_end_date != release.burndown_days[-1])
-        fields = [release.release_end_date, "", "0,0"]
-        csv << fields.collect {|c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
+        csv << fields.collect{ |c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
       end
     end
     export
@@ -216,6 +227,12 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
   def users_assignable_options_for_select(collection)
     s = ''
     groups = ''
+
+    if collection.include?(User.current)
+      el = User.current
+      s << "<option value=\"#{el.id}\" color=\"#{el.backlogs_preference[:task_color]}\" color_light=\"#{el.backlogs_preference[:task_color_light]}\">&lt;&lt; #{l(:label_me)} &gt;&gt;</option>"
+    end
+    
     collection.sort.each do |element|
       if element.is_a?(Group)
         groups << "<option value=\"#{element.id}\" color=\"#AAAAAA\" color_light=\"#E0E0E0\">#{h element.name}</option>"
@@ -229,24 +246,33 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
     s.html_safe
   end
 
-  # Streamline the difference between <%=  %> and <%  %>
-  def rb_labelled_fields_for(*args, &proc)
-    fields_string = labelled_fields_for(*args, &proc)
-    if Rails::VERSION::MAJOR < 3
-      fields_string
+  def release_options_for_select(releases, selected=nil)
+    grouped = Hash.new {|h,k| h[k] = []}
+    releases.each do |release|
+      grouped[release.project.name] << [release.name, release.id]
+    end
+    # Add in the selected
+    if selected && !releases.include?(selected)
+      grouped[selected.project.name] << [selected.name, selected.id]
+    end
+
+    if grouped.keys.size > 1
+      grouped_options_for_select(grouped, selected && selected.id)
     else
-      concat(fields_string)
+      options_for_select((grouped.values.first || []), selected && selected.id)
     end
   end
 
-  # Streamline the difference between <%=  %> and <%  %>
-  def rb_labelled_form_for(*args, &proc)
-    form_string = labelled_form_for(*args, &proc)
-    if Rails::VERSION::MAJOR < 3
-      form_string
-    else
-      concat(form_string)
-    end
+  def format_release_sharing(v)
+    RbRelease::RELEASE_SHARINGS.include?(v) ? l("label_version_sharing_#{v}") : "none"
   end
 
+  #fixup rails base uri which is not obeyed IF url_for is used in a redmine layout hook
+  def url_for_prefix_in_hooks
+    if Rails::VERSION::MAJOR < 3
+      '' #actionpack-2.3.14/lib/action_controller/url_rewriter.rb is injecting relative_url_root
+    else
+      Redmine::Utils.relative_url_root #actionpack-3* is not???
+    end
+  end
 end

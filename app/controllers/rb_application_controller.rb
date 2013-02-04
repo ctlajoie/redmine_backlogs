@@ -4,6 +4,14 @@ class RbApplicationController < ApplicationController
 
   before_filter :load_project, :authorize, :check_if_plugin_is_configured
 
+  #provide list of javascript_include_tags which must be rendered before common.js
+  def rb_jquery_plugins
+    @rb_jquery_plugins
+  end
+  def rb_jquery_plugins=(html)
+    @rb_jquery_plugins = html
+  end
+
   private
 
   # Loads the project to be used by the authorize filter to
@@ -12,7 +20,7 @@ class RbApplicationController < ApplicationController
     @project = if params[:sprint_id]
                  load_sprint
                  @sprint.project
-               elsif params[:release_id]
+               elsif params[:release_id] && !params[:release_id].empty?
                  load_release
                  @release.project
                elsif params[:project_id]

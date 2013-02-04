@@ -1,0 +1,253 @@
+--- 
+Hema Etiketten: |
+  --- 
+  papersize: A4
+  top_margin: "49.890"
+  down: 7
+  width: "178"
+  vertical_pitch: "107"
+  inner_margin: "5"
+  height: "108"
+  source: glabel
+  horizontal_pitch: "187"
+  across: 3
+  left_margin: "20"
+
+Dymo 99014: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 167pt
+  vertical_pitch: 288pt
+  inner_margin: 0pt
+  height: 288pt
+  source: glabel
+  horizontal_pitch: 167pt
+  across: 1
+  left_margin: 0pt
+
+Dymo 99010: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 81pt
+  vertical_pitch: 252pt
+  inner_margin: 0pt
+  height: 252pt
+  source: glabel
+  horizontal_pitch: 81pt
+  across: 1
+  left_margin: 0pt
+
+Dymo 99012: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 102.047pt
+  vertical_pitch: 252.283pt
+  inner_margin: 0pt
+  height: 252.283pt
+  source: glabel
+  horizontal_pitch: 102.047pt
+  across: 1
+  left_margin: 0pt
+
+Dymo 30258: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 153pt
+  vertical_pitch: 198pt
+  inner_margin: 0pt
+  height: 198pt
+  source: glabel
+  horizontal_pitch: 153pt
+  across: 1
+  left_margin: 0pt
+
+Dymo 30327: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 41pt
+  vertical_pitch: 248pt
+  inner_margin: 0pt
+  height: 248pt
+  source: glabel
+  horizontal_pitch: 41pt
+  across: 1
+  left_margin: 0pt
+
+Brother DK-11208: |
+  --- 
+  papersize: Other
+  top_margin: "0"
+  down: 1
+  width: 34.91mm
+  vertical_pitch: "0"
+  inner_margin: 1mm
+  height: 83.90mm
+  source: glabel
+  horizontal_pitch: "0"
+  across: 1
+  left_margin: "0"
+
+Brother DK-11204: |
+  --- 
+  papersize: Other
+  top_margin: "0"
+  down: 1
+  width: 13.97mm
+  vertical_pitch: "0"
+  inner_margin: 1mm
+  height: 47.92mm
+  source: glabel
+  horizontal_pitch: "0"
+  across: 1
+  left_margin: "0"
+
+Brother DK-11202: |
+  --- 
+  papersize: Other
+  top_margin: "0"
+  down: 1
+  width: 58.93mm
+  vertical_pitch: "0"
+  inner_margin: 1mm
+  height: 93.20mm
+  source: glabel
+  horizontal_pitch: "0"
+  across: 1
+  left_margin: "0"
+
+Brother DK-11201: |
+  --- 
+  papersize: Other
+  top_margin: "0"
+  down: 1
+  width: 25.91mm
+  vertical_pitch: "0"
+  inner_margin: 1mm
+  height: 83.90mm
+  source: glabel
+  horizontal_pitch: "0"
+  across: 1
+  left_margin: "0"
+
+Avery 8666: |
+  --- 
+  papersize: A4
+  top_margin: "53"
+  down: 5
+  width: "198.4"
+  vertical_pitch: "147"
+  inner_margin: "5"
+  height: "147.4"
+  source: glabel
+  horizontal_pitch: "264"
+  across: 2
+  left_margin: "66"
+
+Zweckform 32010: |
+  --- 
+  papersize: A4
+  top_margin: "40"
+  down: 5
+  width: "240.94"
+  vertical_pitch: "153"
+  inner_margin: "5"
+  height: "153.07"
+  source: glabel
+  horizontal_pitch: "269"
+  across: 2
+  left_margin: "40"
+
+OfficeMax 86112: |
+  --- 
+  papersize: Other
+  top_margin: 3.6pt
+  down: 3
+  width: 288pt
+  vertical_pitch: 148.5pt
+  inner_margin: 9pt
+  height: 144pt
+  source: glabel
+  horizontal_pitch: 288pt
+  across: 1
+  left_margin: 4.5pt
+
+Avery 6141: |
+  --- 
+  papersize: Other
+  top_margin: 4.5pt
+  down: 7
+  width: 198pt
+  vertical_pitch: 49.5pt
+  inner_margin: 4.5pt
+  height: 45pt
+  source: glabel
+  horizontal_pitch: 198pt
+  across: 1
+  left_margin: 4.5pt
+
+Dymo 30376: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 41pt
+  vertical_pitch: 144pt
+  inner_margin: 0pt
+  height: 144pt
+  source: glabel
+  horizontal_pitch: 41pt
+  across: 1
+  left_margin: 0pt
+
+Dymo 11355: |
+  --- 
+  papersize: Other
+  top_margin: 0pt
+  down: 1
+  width: 54pt
+  vertical_pitch: 144pt
+  inner_margin: 0pt
+  height: 144pt
+  source: glabel
+  horizontal_pitch: 54pt
+  across: 1
+  left_margin: 0pt
+
+Zweckform 3490: |
+  --- 
+  papersize: A4
+  top_margin: "12.557"
+  down: 8
+  width: "198.425"
+  vertical_pitch: "102.047"
+  inner_margin: "5"
+  height: "102.047"
+  source: glabel
+  horizontal_pitch: "198.425"
+  across: 3
+  left_margin: ""
+
+Avery 7161: |
+  --- 
+  papersize: A4
+  top_margin: "23"
+  down: 6
+  width: "180.2"
+  vertical_pitch: "132.5"
+  inner_margin: "5"
+  height: "132.6"
+  source: glabel
+  horizontal_pitch: "186.9"
+  across: 3
+  left_margin: "21"
+
