@@ -48,7 +48,7 @@ Redmine::Plugin.register :redmine_backlogs do
   name 'Redmine Backlogs'
   author "friflaj,Mark Maglana,John Yani,mikoto20000,Frank Blendinger,Bo Hansen,stevel,Patrick Atamaniuk"
   description 'A plugin for agile teams'
-  version 'v0.9.35'
+  version 'v0.9.37'
 
   settings :default => {
                          :story_trackers            => nil,
@@ -59,6 +59,7 @@ Redmine::Plugin.register :redmine_backlogs do
                          :story_points              => "1,2,3,5,8",
                          :show_burndown_in_sidebar  => 'enabled',
                          :show_project_name         => nil,
+                         :scrum_stats_menu_position => 'top'
                        },
            :partial => 'backlogs/settings'
 
@@ -71,11 +72,11 @@ Redmine::Plugin.register :redmine_backlogs do
                                       }
     permission :configure_backlogs,   { :rb_project_settings => :project_settings }
     permission :view_master_backlog,  {
-                                        :rb_master_backlogs  => [:show, :menu],
+                                        :rb_master_backlogs  => [:show, :menu, :closed_sprints],
                                         :rb_sprints          => [:index, :show, :download],
                                         :rb_hooks_render     => [:view_issues_sidebar],
                                         :rb_wikis            => :show,
-                                        :rb_stories          => [:index, :show],
+                                        :rb_stories          => [:index, :show, :tooltip],
                                         :rb_queries          => [:show, :impediments],
                                         :rb_server_variables => [:project, :sprint, :index],
                                         :rb_burndown_charts  => [:embedded, :show, :print],
@@ -86,16 +87,16 @@ Redmine::Plugin.register :redmine_backlogs do
                                         :rb_releases         => [:index, :show],
                                         :rb_sprints          => [:index, :show, :download],
                                         :rb_wikis            => :show,
-                                        :rb_stories          => [:index, :show],
+                                        :rb_stories          => [:index, :show, :tooltip],
                                         :rb_server_variables => [:project, :sprint, :index],
                                         :rb_burndown_charts  => [:embedded, :show, :print],
                                         :rb_updated_items    => :show
                                       }
 
     permission :view_taskboards,      {
-                                        :rb_taskboards       => :show,
+                                        :rb_taskboards       => [:current, :show],
                                         :rb_sprints          => :show,
-                                        :rb_stories          => [:index, :show],
+                                        :rb_stories          => [:index, :show, :tooltip],
                                         :rb_tasks            => [:index, :show],
                                         :rb_impediments      => [:index, :show],
                                         :rb_wikis            => :show,
@@ -106,7 +107,7 @@ Redmine::Plugin.register :redmine_backlogs do
                                       }
 
     # Release permissions
-    permission :modify_releases,      { :rb_releases => [:new, :create, :edit, :snapshot, :destroy]  }
+    permission :modify_releases,      { :rb_releases => [:new, :create, :edit, :update, :snapshot, :destroy]  }
 
     # Sprint permissions
     # :show_sprints and :list_sprints are implicit in :view_master_backlog permission
@@ -138,6 +139,19 @@ Redmine::Plugin.register :redmine_backlogs do
   end
 
   menu :project_menu, :rb_master_backlogs, { :controller => :rb_master_backlogs, :action => :show }, :caption => :label_backlogs, :after => :roadmap, :param => :project_id, :if => Proc.new { Backlogs.configured? }
-  menu :project_menu, :rb_releases, { :controller => :rb_releases, :action => :index }, :caption => :label_release_plural, :after => :rb_master_backlogs, :param => :project_id, :if => Proc.new { Backlogs.configured? }
-  menu :application_menu, :rb_statistics, { :controller => :rb_all_projects, :action => :statistics}, :caption => :label_scrum_statistics, :if => Proc.new { Backlogs.configured? && User.current.allowed_to?({:controller => :rb_all_projects, :action => :statistics}, nil, :global => true) }
+  menu :project_menu, :rb_taskboards, { :controller => :rb_taskboards, :action => :current }, :caption => :label_task_board, :after => :rb_master_backlogs, :param => :project_id, :if => Proc.new {|project| Backlogs.configured? && project && project.active_sprint }
+  menu :project_menu, :rb_releases, { :controller => :rb_releases, :action => :index }, :caption => :label_release_plural, :after => :rb_taskboards, :param => :project_id, :if => Proc.new { Backlogs.configured? }
+
+  menu :top_menu, :rb_statistics, { :controller => :rb_all_projects, :action => :statistics}, :caption => :label_scrum_statistics,
+    :if => Proc.new { 
+      Backlogs.configured? &&
+      User.current.allowed_to?({:controller => :rb_all_projects, :action => :statistics}, nil, :global => true) &&
+      (Backlogs.setting[:scrum_stats_menu_position].nil? || Backlogs.setting[:scrum_stats_menu_position] == 'top')
+    }
+  menu :application_menu, :rb_statistics, { :controller => :rb_all_projects, :action => :statistics}, :caption => :label_scrum_statistics,
+    :if => Proc.new { 
+      Backlogs.configured? &&
+      User.current.allowed_to?({:controller => :rb_all_projects, :action => :statistics}, nil, :global => true) &&
+      Backlogs.setting[:scrum_stats_menu_position] == 'application'
+    }
 end

@@ -43,11 +43,14 @@ RB.TaskboardUpdater = RB.Object.create(RB.BoardUpdater, {
       newCell.prepend(target.$);
     }
 
+    //update tooltip
+    RB.util.refreshToolTip(target);
+
     target.$.effect("highlight", { easing: 'easeInExpo' }, 4000);
   },
   
   start: function(){
-    this.params = 'only=tasks,impediments';    
+    this.params = 'only=tasks,impediments&sprint='+RB.constants.sprint_id;
     this.initialize();
   }
 

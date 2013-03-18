@@ -28,12 +28,14 @@ if (!RB.constants) {
     'Filter tasks: my tasks': "<%= l(:label_filter_tasks_my_tasks)%>",
     'All tasks': "<%= l(:label_all_tasks) %>",
     'My tasks': "<%= l(:label_my_tasks) %>",
-    'View options': "<%= l(:label_view_options) %>"
+    'View options': "<%= l(:label_view_options) %>",
+    'No data to show': "<%= l(:label_no_data_to_show) %>"
   };
 
   RB.routes = {
     create_sprint: <%= url_for(:controller => 'rb_sprints', :action => 'create').to_json.html_safe %>,
     update_sprint: <%= url_for(:controller => 'rb_sprints', :action => 'update', :sprint_id => ':id').to_json.html_safe %>,
+    update_release: <%= url_for(:controller => 'rb_releases', :action => 'update', :release_id => ':id').to_json.html_safe %>,
 
     create_story: <%= url_for(:controller => 'rb_stories', :action => 'create').to_json.html_safe %>,
     update_story: <%= url_for(:controller => 'rb_stories', :action => 'update', :id => ':id').to_json.html_safe %>,
@@ -47,6 +49,7 @@ if (!RB.constants) {
     show_updated_items: <%= url_for(:controller => 'rb_updated_items', :action => 'show', :project_id => ':id').to_json.html_safe %>,
     show_burndown_chart: <%= url_for(:controller => 'rb_burndown_charts', :action => 'show', :sprint_id => ':id').to_json.html_safe %>,
     show_burndown_embedded: <%= url_for(:controller => 'rb_burndown_charts', :action => 'embedded', :sprint_id => ':id').to_json.html_safe %>,
+    show_tooltip: <%= url_for(:controller => 'rb_stories', :action => 'tooltip', :id => ':id').to_json.html_safe %>,
     home: <%= url_for(:home).to_json.html_safe %>
   };
 
@@ -66,6 +69,8 @@ if (!RB.constants) {
       update_stories: <%= User.current.allowed_to?(:update_stories, @project) ? 'true' : 'false' %>,
       create_sprints: <%= User.current.allowed_to?(:create_sprints, @project) ? 'true' : 'false' %>,
       update_sprints: <%= User.current.allowed_to?(:update_sprints, @project) ? 'true' : 'false' %>,
+      create_releases: <%= User.current.allowed_to?(:modify_releases, @project) ? 'true' : 'false' %>,
+      update_releases: <%= User.current.allowed_to?(:modify_releases, @project) ? 'true' : 'false' %>,
       create_tasks: <%= User.current.allowed_to?(:create_tasks, @project) ? 'true' : 'false' %>,
       update_tasks: <%= User.current.allowed_to?(:update_tasks, @project) ? 'true' : 'false' %>,
       create_impediments: <%= User.current.allowed_to?(:create_impediments, @project) ? 'true' : 'false' %>,
@@ -119,4 +124,5 @@ if (!RB.constants) {
   RB.constants.project_releases = <%= project_releases.to_json.html_safe %>;
   RB.constants.story_states = <%= workflow_transitions(RbStory).to_json.html_safe %>;
   RB.routes.backlog_menu = <%= url_for(:controller => 'rb_master_backlogs', :action => 'menu', :project_id => @project.identifier, :only_path => true).to_json.html_safe %>;
+  RB.routes.closed_sprints = <%= url_for(:controller => 'rb_master_backlogs', :action => 'closed_sprints', :project_id => @project.identifier, :only_path => true).to_json.html_safe %>;
 <% end %>

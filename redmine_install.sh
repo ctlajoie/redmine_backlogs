@@ -36,7 +36,7 @@ then
   exit 1;
 fi
 
-export CLUSTER1=" features/burndown.feature features/cecilia_burndown.feature features/common.feature features/duplicate_story.feature features/extended_timelog.feature features/product_owner.feature features/release3.feature features/release_burndown.feature features/routes.feature features/scrum_master.feature features/settings.feature features/sidebar.feature features/team_member.feature features/ui.feature"
+export CLUSTER1=" features/updater.feature features/list_with_gaps.feature features/burndown.feature features/cecilia_burndown.feature features/common.feature features/duplicate_story.feature features/extended_timelog.feature features/product_owner.feature features/release3.feature features/release_burndown.feature features/routes.feature features/scrum_master.feature features/settings.feature features/sidebar.feature features/team_member.feature features/ui.feature"
 export CLUSTER2=" features/shared-versions-burndown.feature features/shared-versions-chief_product_owner2.feature features/shared-versions-chief_product_owner.feature features/shared-versions.feature features/shared-versions-pblpage.feature features/shared-versions-positioning.feature features/shared-versions-scrum_master-dnd.feature features/shared-versions-team_member-dnd.feature"
 
 export RAILS_ENV=test
@@ -48,20 +48,16 @@ case $REDMINE_VER in
           export MIGRATE_PLUGINS=db:migrate_plugins
           export REDMINE_TARBALL=https://github.com/edavis10/redmine/archive/$REDMINE_VER.tar.gz
           ;;
-  2.0.*)  export PATH_TO_PLUGINS=./plugins # for redmine 2.0
+  2.*)  export PATH_TO_PLUGINS=./plugins # for redmine 2.0
           export GENERATE_SECRET=generate_secret_token
           export MIGRATE_PLUGINS=redmine:plugins:migrate
           export REDMINE_TARBALL=https://github.com/edavis10/redmine/archive/$REDMINE_VER.tar.gz
           ;;
-  2.1.*)  export PATH_TO_PLUGINS=./plugins # for redmine 2.1
+  master) export PATH_TO_PLUGINS=./plugins
           export GENERATE_SECRET=generate_secret_token
           export MIGRATE_PLUGINS=redmine:plugins:migrate
-          export REDMINE_TARBALL=https://github.com/edavis10/redmine/archive/$REDMINE_VER.tar.gz
-          ;;
-  2.2.*)  export PATH_TO_PLUGINS=./plugins # for redmine 2.2
-          export GENERATE_SECRET=generate_secret_token
-          export MIGRATE_PLUGINS=redmine:plugins:migrate
-          export REDMINE_TARBALL=https://github.com/edavis10/redmine/archive/$REDMINE_VER.tar.gz
+          export REDMINE_GIT_REPO=git://github.com/edavis10/redmine.git
+          export REDMINE_GIT_TAG=master
           ;;
   v3.3.0) export PATH_TO_PLUGINS=./vendor/plugins
           export GENERATE_SECRET=generate_session_store
@@ -82,8 +78,14 @@ clone_redmine()
   if [ ! "$VERBOSE" = "yes" ]; then
     QUIET=--quiet
   fi
-  mkdir -p $PATH_TO_REDMINE
-  wget $REDMINE_TARBALL -O- | tar -C $PATH_TO_REDMINE -xz --strip=1 --show-transformed -f -
+  if [ -n "${REDMINE_GIT_TAG}" ]; then
+    git clone -b $REDMINE_GIT_TAG --depth=100 $QUIET $REDMINE_GIT_REPO $PATH_TO_REDMINE
+    cd $PATH_TO_REDMINE
+    git checkout $REDMINE_GIT_TAG
+  else
+    mkdir -p $PATH_TO_REDMINE
+    wget $REDMINE_TARBALL -O- | tar -C $PATH_TO_REDMINE -xz --strip=1 --show-transformed -f -
+  fi
 }
 
 run_tests()
@@ -208,6 +210,8 @@ fi
 # 1) ignore redmine-master's test-unit dependency, we need 1.2.3..
 sed -i -e 's=.*gem ["'\'']test-unit["'\''].*==g' ${PATH_TO_REDMINE}/Gemfile
 # 2) tell out Gemfile that we're testing: so force test-unit 1.2.3 #done globally above by setting IN_RBL_TESTENV=true
+#capybara 2 breaks our tests. too much has changed.
+sed -i -e 's=.*gem ["'\'']capybara["'\''].*==g' ${PATH_TO_REDMINE}/Gemfile
 
 # install gems
 mkdir -p vendor/bundle

@@ -47,7 +47,7 @@
   width: 100%;
 }
 .fff-middle{
-  margin-right:100px;
+  margin-right:112px;
   margin-left:110px;
 }
 .fff-left{
@@ -57,20 +57,20 @@
 }
 .fff-right{
   float: left;
-  width: 100px;
-  margin-left: -100px;
+  width: 112px;
+  margin-left: -112px;
 }
 
 .header .fff-middle{
-  margin-right:212px;
+  margin-right:228px;
   margin-left: 29px;
 }
 .header .fff-left{
   width: 29px;
 }
 .header .fff-right{
-  width: 212px;
-  margin-left: -212px;
+  width: 228px;
+  margin-left: -228px;
 }
 /* end fixed-fluid-fixed layout */
 
@@ -82,12 +82,12 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
 
 /*the close completed sprint button in pbl header */
 #product_backlog_container .header .close_sprint {
-  font-size:11px;
   height:28px;
   line-height:30px;
   padding:0;
   float: left;
-  width:150px;
+  width:194px;
+  overflow: hidden;
   white-space: nowrap;
 }
 
@@ -267,13 +267,13 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   cursor: default; /*we have model class here, but are not editable*/
 }
 
-#backlogs_container .sprint.saving{
+#backlogs_container .header .saving{
   background-image:url('images/ajax.gif');
   background-repeat:no-repeat;
   background-position:center;
 }
 
-#backlogs_container .sprint.error{
+#backlogs_container .header .error{
   background-image:url('images/error.png');
   background-repeat:no-repeat;
   background-position:center;
@@ -418,7 +418,7 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   text-decoration:line-through;
 }
 #backlogs_container .stories .story .status_id {
-  width:56px;
+  width:68px;
   float: left;
   padding-left:8px;
   white-space: nowrap;
@@ -478,7 +478,7 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   height:65px;
 }
 /* In-place Sprint Editor */
-#backlogs_container .sprint.editing .editors{
+#backlogs_container .header .editing .editors{
   display:block;
   position: absolute;
   height: 60px;
@@ -489,38 +489,38 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   z-index: 1;
 }
 
-#backlogs_container .sprint.editing .editor{
+#backlogs_container .header .editing .editor{
   font-family:Verdana, Arial, sans-serif;
 }
-#backlogs_container .sprint.editing label,
-#backlogs_container .sprint.editing .id.editor{
+#backlogs_container .header .editing label,
+#backlogs_container .header .editing .id.editor{
   display:none;
 }
 
-#backlogs_container .sprint.editing .effective_date.editor,
-#backlogs_container .sprint.editing .sprint_start_date.editor,
-#backlogs_container .sprint.editing .name.editor{
+#backlogs_container .header .editing .end_date.editor,
+#backlogs_container .header .editing .release_start_date.editor,
+#backlogs_container .header .editing .effective_date.editor,
+#backlogs_container .header .editing .sprint_start_date.editor,
+#backlogs_container .header .editing .name.editor{
   float: left;
   position: relative;
   margin: 0;
   padding:0;
   margin-right: 4px;
 }
-#backlogs_container .sprint.editing .name.editor{
-  height:21px;
+#backlogs_container .header .editing .name.editor{
+  height:23px;
   line-height:15px;
 }
-#backlogs_container .sprint.editing .sprint_start_date.editor{
+#backlogs_container .header .editing .release_start_date.editor,
+#backlogs_container .header .editing .sprint_start_date.editor,
+#backlogs_container .header .editing .end_date.editor,
+#backlogs_container .header .editing .effective_date.editor{
   height:23px;
   line-height:27px;
   width:75px;
 }
-#backlogs_container .sprint.editing .effective_date.editor{
-  height:23px;
-  line-height:27px;
-  width:75px;
-}
-#backlogs_container .sprint.editing .description.editor{
+#backlogs_container .header .editing .description.editor{
   display:none;
 }
 
@@ -548,7 +548,7 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
 }
 #backlogs_container .stories .story.editing .status_id{
   margin:0;
-  width:84px;
+  width:76px;
 }
 #backlogs_container .stories .story.editing select.story_points.editor {
   margin:0;
@@ -609,7 +609,7 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,StartColorStr=#DDDDDD,EndColorStr=#BBBBBB);
 }
 
-#backlogs_container .sprint.editing .edit-actions { /* make the save/cancel buttons visible for sprint editor */
+#backlogs_container .header .editing .edit-actions { /* make the save/cancel buttons visible for sprint editor */
   clear: both;
   background: white;
   position: relative;
@@ -715,3 +715,6 @@ ul li { vertical-align: bottom; } /* close IE7 gap between list items */
   height: auto;
   overflow: show;
 }
+
+/* show completed sprints */
+#show_completed_sprints { cursor:pointer; }

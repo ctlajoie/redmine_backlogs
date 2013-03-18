@@ -109,10 +109,6 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
     story.new_record? ? "" : h(story.description).gsub(/&lt;(\/?pre)&gt;/, '<\1>')
   end
 
-  def textile_to_html(textile)
-    textile.nil? ? "" : Redmine::WikiFormatting::Textile::Formatter.new(textile).to_html
-  end
-
   def tracker_id_or_empty(story)
     story.new_record? ? "" : story.tracker_id
   end
@@ -143,7 +139,7 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
     d.strftime("%B %d, %Y %H:%M:%S") + '.' + (d.to_f % 1 + add).to_s.split('.')[1] + d.strftime(" %z")
   end
 
-  def remaining_hours(item)
+  def remaining_hours_or_empty(item)
     item.remaining_hours.blank? || item.remaining_hours==0 ? "" : item.remaining_hours
   end
 
@@ -158,9 +154,17 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
     initial_points - ( (workdays(initial_day, day).size - 1) * day_diff )
   end
 
-  def release_burndown_to_csv(release)
-    ic = Iconv.new(l(:general_csv_encoding), 'UTF-8')
+  def csv_encode(s)
+    if RUBY_VERSION >= "1.9"
+      s.encode(l(:general_csv_encoding))
+    else
+      Iconv.conv(l(:general_csv_encoding), 'UTF-8', s)
+    end
+  rescue
+    s
+  end
 
+  def release_burndown_to_csv(release)
     # FIXME decimal_separator is not used, instead a hardcoded s/\./,/g is done
     # below to make (German) Excel happy
     #decimal_separator = l(:general_csv_decimal_separator)
@@ -171,7 +175,7 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
                   l(:label_points_added),
                   l(:label_points_accepted)
                 ]
-      csv << headers.collect {|c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
+      csv << headers.collect {|c| csv_encode(c.to_s) }
 
       bd = release.burndown
       lines = 0
@@ -181,7 +185,7 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
                    bd[:backlog_points][i].to_s.gsub('.', ','),
                    bd[:closed_points][i].to_s.gsub('.', ',')
                  ]
-        csv << fields.collect{ |c| begin; ic.iconv(c.to_s); rescue; c.to_s; end }
+        csv << fields.collect{ |c| csv_encode(c.to_s) }
       end
     end
     export
@@ -192,23 +196,6 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
                              :conditions => ["enabled_modules.name = 'backlogs' and status = ?", Project::STATUS_ACTIVE],
                              :include => :project,
                              :joins => :project).collect { |mod| mod.project}
-  end
-
-  # Renders the project quick-jump box
-  def render_backlog_project_jump_box
-    projects = RbCommonHelper.find_backlogs_enabled_active_projects
-    projects = Member.find(:all, :conditions => ["user_id = ? and project_id IN (?)", User.current.id, projects.collect(&:id)]).collect{ |m| m.project}
-
-    if projects.any?
-      s = '<select onchange="if (this.value != \'\') { window.location = this.value; }">' +
-            "<option value=''>#{ l(:label_jump_to_a_project) }</option>" +
-            '<option value="" disabled="disabled">---</option>'
-      s << project_tree_options_for_select(projects, :selected => @project) do |p|
-        { :value => url_for(:controller => 'rb_master_backlogs', :action => 'show', :project_id => p, :jump => current_menu_item) }
-      end
-      s << '</select>'
-      s.html_safe
-    end
   end
 
   # Returns a collection of users allowed to log time for the current project. (see app/views/rb_taskboards/show.html.erb for usage)
@@ -232,7 +219,7 @@ filter:progid:DXImageTransform.Microsoft.Gradient(Enabled=1,GradientType=0,Start
       el = User.current
       s << "<option value=\"#{el.id}\" color=\"#{el.backlogs_preference[:task_color]}\" color_light=\"#{el.backlogs_preference[:task_color_light]}\">&lt;&lt; #{l(:label_me)} &gt;&gt;</option>"
     end
-    
+
     collection.sort.each do |element|
       if element.is_a?(Group)
         groups << "<option value=\"#{element.id}\" color=\"#AAAAAA\" color_light=\"#E0E0E0\">#{h element.name}</option>"

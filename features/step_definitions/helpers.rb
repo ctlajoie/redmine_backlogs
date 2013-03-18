@@ -4,8 +4,9 @@ require 'cucumber/ast/background'
 require 'benchmark'
 
 class Time
-  def force_utc
-    Time.utc(self.year, self.month, self.day, self.hour, self.min, self.sec)
+  def force_tz(tz=nil)
+    tz = ActiveSupport::TimeZone['UTC'] if tz.nil?
+    tz.local(self.year, self.month, self.day, self.hour, self.min, self.sec)
   end
 end
 
@@ -92,48 +93,48 @@ def set_now(time, options={})
   raise "Unexpected options: #{options.keys.inspect}" unless options.size == 0
 
   msg = "#{msg}: " unless msg == ''
+  tz = RbIssueHistory.burndown_timezone
 
   if (time.is_a?(Integer) || time =~ /^[0-9]+$/) && sprint
     day = Integer(time)
 
     if day < 0
-      time = sprint.days[1].to_time.force_utc + (day * 24*60*60)
+      time = sprint.days[1].to_time.force_tz(tz) + (day * 24*60*60)
     else
-      time = sprint.days[day].to_time.force_utc
+      time = sprint.days[day].to_time.force_tz(tz)
     end
     time += 60*60
 
     # if we're setting the date to today again, don't do anything
-    return if time.force_utc.to_date == Date.today
+    return if time.to_date == tz.today #Date.today is not utc. its local. Date.current might be.
   else
-    time = Chronic.parse(time).force_utc
+    Chronic.time_class = tz #convince chronic to use time zone
+    time = Chronic.parse(time)
   end
-  raise "#{msg}Time #{time} is not UTC" unless time.utc?
+  raise "#{msg}Time #{time} is not in timezone #{tz}" unless time.utc_offset == tz.utc_offset
 
   if reset
     # don't test anything, just set the time
   else
     # Time zone must be set correctly, or ActiveRecord will store local, but retrieve UTC, which screws to Time.to_date. WTF people.
-    Time.zone = "UTC"
-    now = Time.now.utc
+    now = tz.now
 
     timediff = now - time
-    raise "#{msg}You may not travel back in time (it is now #{now}, and you want it to be #{time}" if timediff > 0
+    raise "#{msg}You may not travel back in time (it is now #{now}, and you want it to be #{time}" if timediff > 0 #WHY? i am testing, ain't i?
   end
 
   Timecop.travel(time)
 end
 
-def story_before(rank, project, sprint=nil)
+def story_after(rank, project, sprint=nil)
   return nil if rank.blank?
 
   rank = rank.to_i if rank.is_a?(String) && rank =~ /^[0-9]+$/
-  return nil if rank == 1
 
-  prev = RbStory.find_by_rank(rank - 1, RbStory.find_options(:project => project, :sprint => sprint))
-  prev.should_not be_nil
+  nxt = RbStory.find_by_rank(rank, RbStory.find_options(:project => project, :sprint => sprint))
+  return nil if nxt.nil?
 
-  return prev.id
+  return nxt.id
 end
 
 def time_offset(o)
@@ -201,19 +202,59 @@ end
 
 def login_as_product_owner
   login_as('jsmith', 'jsmith')
+  setup_permissions('product owner')
 end
 
 def login_as_scrum_master
   login_as('jsmith', 'jsmith')
+  setup_permissions('scrum master')
 end
 
 def login_as_team_member
   login_as('jsmith', 'jsmith')
+  setup_permissions('team member')
 end
 
 def login_as_admin
   login_as('admin', 'admin')
-end  
+end
+
+def setup_permissions(typ)
+  role = Role.find(:first, :conditions => "name='Manager'")
+  if typ == 'scrum master'
+    role.permissions << :view_master_backlog
+    role.permissions << :view_releases
+    role.permissions << :view_taskboards
+    role.permissions << :update_sprints
+    role.permissions << :update_stories
+    role.permissions << :create_impediments
+    role.permissions << :update_impediments
+    role.permissions << :subscribe_to_calendars
+    role.permissions << :view_wiki_pages        # NOTE: This is a Redmine core permission
+    role.permissions << :edit_wiki_pages        # NOTE: This is a Redmine core permission
+    role.permissions << :create_sprints
+  elsif typ == 'team member'
+    role.permissions << :view_master_backlog
+    role.permissions << :view_releases
+    role.permissions << :view_taskboards
+    role.permissions << :create_tasks
+    role.permissions << :update_tasks
+  else #product owner
+    role.permissions << :view_master_backlog
+    role.permissions << :create_stories
+    role.permissions << :update_stories
+    role.permissions << :view_releases
+    role.permissions << :modify_releases
+    role.permissions << :view_scrum_statistics
+    role.permissions << :configure_backlogs
+  end
+  role.save!
+  
+  @projects.each{|project|
+    m = Member.new(:user => @user, :roles => [role])
+    project.members << m
+  }
+end
 
 def task_position(task)
   p1 = task.story.tasks.select{|t| t.id == task.id}[0].rank

@@ -6,7 +6,7 @@ module Backlogs
       @project = project
       @statistics = {:succeeded => [], :failed => [], :values => {}}
 
-      @active_sprint = RbSprint.find(:first, :conditions => ["project_id = ? and status = 'open' and not (sprint_start_date is null or effective_date is null) and ? between sprint_start_date and effective_date", @project.id, Date.today])
+      @active_sprint = @project.active_sprint
       @past_sprints = RbSprint.find(:all,
         :conditions => ["project_id = ? and not(effective_date is null or sprint_start_date is null) and effective_date < ?", @project.id, Date.today],
         :order => "effective_date desc",
@@ -16,11 +16,11 @@ module Backlogs
       @all_sprints.each{|sprint| sprint.burndown.direction = :up }
       days = @past_sprints.collect{|s| s.days.size}.sum
       if days != 0
-        @points_per_day = @past_sprints.collect{|s| s.burndown.data[:points_committed][0]}.compact.sum / days
+        @points_per_day = @past_sprints.collect{|s| s.burndown.cached_data[:points_committed][0]}.compact.sum / days #FIXME this is very expensive
       end
 
       if @all_sprints.size != 0
-        @velocity = @past_sprints.collect{|sprint| sprint.burndown.data[:points_accepted][-1].to_f}
+        @velocity = @past_sprints.collect{|sprint| sprint.burndown.cached_data[:points_accepted][-1].to_f}
         @velocity_stddev = stddev(@velocity)
       end
 
@@ -31,10 +31,11 @@ module Backlogs
 
       hours_per_point = []
       @all_sprints.each {|sprint|
-        hours = sprint.burndown.data[:hours_remaining][0].to_f
+        hours = sprint.burndown.cached_data[:hours_remaining][0].to_f
         next if hours == 0.0
-        hours_per_point << sprint.burndown.data[:points_committed][0].to_f / hours
+        hours_per_point << sprint.burndown.cached_data[:points_committed][0].to_f / hours
       }
+
       @hours_per_point_stddev = stddev(hours_per_point)
       @hours_per_point = hours_per_point.sum.to_f / hours_per_point.size unless hours_per_point.size == 0
 
@@ -117,8 +118,8 @@ module Backlogs
       @past_sprints.each {|sprint|
         bd = sprint.burndown
         bd.direction = :up
-        c = bd.data[:points_committed][-1]
-        a = bd.data[:points_accepted][-1]
+        c = bd.cached_data[:points_committed][-1]
+        a = bd.cached_data[:points_accepted][-1]
         next unless c && a && c != 0
 
         accepted << [(a * 100.0) / c, 100.0].min
@@ -223,16 +224,19 @@ module Backlogs
 
       #depending on sharing mode
       def closed_shared_sprints
-        if Backlogs.setting[:disable_closed_sprints_to_master_backlogs]
-          return []
-        else
-          if Backlogs.setting[:sharing_enabled]
-            order = Backlogs.setting[:sprint_sort_order] == 'desc' ? 'DESC' : 'ASC'
-            shared_versions.visible.scoped(:conditions => {:status => ['closed']}, :order => "sprint_start_date #{order}, effective_date #{order}").collect{|v| v.becomes(RbSprint) }
-          else #no backlog sharing
-            RbSprint.closed_sprints(self)
-          end
-        end #disable_closed
+        if Backlogs.setting[:sharing_enabled]
+          order = Backlogs.setting[:sprint_sort_order] == 'desc' ? 'DESC' : 'ASC'
+          shared_versions.visible.scoped(:conditions => {:status => ['closed']}, :order => "sprint_start_date #{order}, effective_date #{order}").collect{|v| v.becomes(RbSprint) }
+        else #no backlog sharing
+          RbSprint.closed_sprints(self)
+        end
+      end
+
+      def active_sprint
+        @active_sprint ||= RbSprint.find(:first, :conditions => [
+          "project_id = ? and status = 'open' and not (sprint_start_date is null or effective_date is null) and ? between sprint_start_date and effective_date",
+          self.id, (Time.zone ? Time.zone : Time).now.beginning_of_day
+        ])
       end
 
       def open_releases_by_date

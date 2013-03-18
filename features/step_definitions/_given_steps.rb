@@ -7,7 +7,11 @@ Before do
   @projects = nil
   @sprint = nil
   @story = nil
+  #sanitize settings, they spill over from previous tests
   Backlogs.setting[:include_sat_and_sun] = false
+  Backlogs.setting[:sharing_enabled] = false
+  Backlogs.setting[:story_follow_task_status] = nil
+  Time.zone = 'UTC'
 end
 
 After do |scenario|
@@ -19,56 +23,20 @@ Given /^I am admin$/ do
 end
 
 Given /^I am a product owner of the project$/ do
-  role = Role.find(:first, :conditions => "name='Manager'")
-  role.permissions << :view_master_backlog
-  role.permissions << :create_stories
-  role.permissions << :update_stories
-  role.permissions << :view_releases
-  role.permissions << :modify_releases
-  role.permissions << :view_scrum_statistics
-  role.permissions << :configure_backlogs
-  role.save!
   login_as_product_owner
-  @projects.each{|project|
-    m = Member.new(:user => @user, :roles => [role])
-    project.members << m
-  }
 end
 
 Given /^I am a scrum master of the project$/ do
-  role = Role.find(:first, :conditions => "name='Manager'")
-  role.permissions << :view_master_backlog
-  role.permissions << :view_releases
-  role.permissions << :view_taskboards
-  role.permissions << :update_sprints
-  role.permissions << :update_stories
-  role.permissions << :create_impediments
-  role.permissions << :update_impediments
-  role.permissions << :subscribe_to_calendars
-  role.permissions << :view_wiki_pages        # NOTE: This is a Redmine core permission
-  role.permissions << :edit_wiki_pages        # NOTE: This is a Redmine core permission
-  role.permissions << :create_sprints
-  role.save!
   login_as_scrum_master
-  @projects.each{|project|
-    m = Member.new(:user => @user, :roles => [role])
-    project.members << m
-  }
+end
+
+#must not login twice on redmine 2.3
+Given /^I am a scrum master of all projects$/ do
+  setup_permissions('scrum master')
 end
 
 Given /^I am a team member of the project$/ do
-  role = Role.find(:first, :conditions => "name='Manager'")
-  role.permissions << :view_master_backlog
-  role.permissions << :view_releases
-  role.permissions << :view_taskboards
-  role.permissions << :create_tasks
-  role.permissions << :update_tasks
-  role.save!
   login_as_team_member
-  @projects.each{|project|
-    m = Member.new(:user => @user, :roles => [role])
-    project.members << m
-  }
 end
 
 Given /^I am logged out$/ do
@@ -296,7 +264,7 @@ Given /^I have made the following task mutations:$/ do |table|
     task.should_not be_nil
 
     set_now(mutation.delete('day'), :msg => task.subject, :sprint => current_sprint)
-    Time.now.should be >= task.created_on
+    Time.zone.now.should be >= task.created_on
 
     task.init_journal(User.current)
 
@@ -317,6 +285,10 @@ Given /^I have made the following task mutations:$/ do |table|
 
     mutation.should == {}
   end
+end
+
+Given /^I have deleted all existing issues from all projects$/ do
+  Issue.delete_all
 end
 
 Given /^I have deleted all existing issues$/ do
@@ -347,12 +319,12 @@ end
 
 Given /^I have defined the following stories in the following sprints?:$/ do |table|
   table.hashes.each do |story|
+    sprint = RbSprint.find_by_name(story.delete('sprint')) #find by name only, please use unique sprint names over projects for tests
     if story['project_id'] # where to put the story into, so we can have a story of project A in a sprint of project B
       project = get_project(story.delete('project_id'))
     else
-      project = @project
+      project = sprint.project || @project
     end
-    sprint = RbSprint.find_by_name(story.delete('sprint')) #find by name only, please use unique sprint names over projects for tests
     sprint.should_not be_nil
     params = initialize_story_params project.id
     params['subject'] = story.delete('subject')
@@ -393,7 +365,7 @@ Given /^I have defined the following tasks:$/ do |table|
     else
       set_now(at, :msg => params['subject'])
     end
-    Time.now.should be >= story.created_on
+    Time.zone.now.should be >= story.created_on
 
     task.should == {}
 
@@ -498,11 +470,11 @@ end
 Given /^I have changed the sprint start date to (.*)$/ do |date|
   case date
     when 'today'
-      date = Date.today.to_time
+      date = Time.zone.today
     when 'tomorrow'
-      date = (Date.today + 1).to_time
+      date = (Time.zone.today + 1)
     else
-      date = Date.parse(date)
+      date = Time.zone.parse(date).to_date
   end
   current_sprint.sprint_start_date = date
   current_sprint(:keep).save!
@@ -628,4 +600,10 @@ end
 
 Given /^Issue done_ratio is determined by the issue field$/ do
   Setting.issue_done_ratio = 'issue_field'
+end
+
+Given(/^I request the csv format for release "(.*?)"$/) do |arg1|
+  r = RbRelease.where(:name => arg1).first
+  r.should_not be_nil
+  visit url_for(:controller => :rb_releases, :action => :show, :format => :csv, :release_id => r.id, :only_path => true)
 end

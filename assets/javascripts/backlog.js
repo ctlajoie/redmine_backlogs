@@ -44,7 +44,7 @@ RB.Backlog = RB.Object.create({
       RB.Factory.initialize(RB.Sprint, this.getSprint());
     }
     else if (this.isReleaseBacklog()) {
-      RB.Factory.initialize(RB.Sprint, this.getRelease());
+      RB.Factory.initialize(RB.Release, this.getRelease());
     }
 
     this.drawMenu();
@@ -307,6 +307,7 @@ RB.Backlog = RB.Object.create({
     total = 0;
     this.getStories().each(function(index){
       var story = RB.$(this).data('this');
+      if (!story) return; //some race condition with auto updater?
       var story_tracker = story.getTracker();
       total += RB.$(this).data('this').getPoints();
       if ('undefined' == typeof(tracker_total[story_tracker])) {

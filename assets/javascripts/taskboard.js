@@ -2,7 +2,7 @@
   TASKBOARD
 ***************************************/
 
-RB.Taskboard = RB.Object.create(RB.Model, {
+RB.Taskboard = RB.Object.create({
     
   initialize: function(el){
     var j = RB.$(el);
@@ -279,13 +279,5 @@ RB.UserFilter = RB.Object.create({
         RB.$(this).closest('tr').hide();
     });
    }
-});
-
-RB.$(function(){ /*document ready*/
-  RB.$("#board_header").scrollFollow({
-    speed: 100,
-    offset: 0
-  });
-  RB.UserFilter.initialize();
 });
 

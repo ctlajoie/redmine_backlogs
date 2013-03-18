@@ -5,27 +5,19 @@ class RbMasterBacklogsController < RbApplicationController
 
   def show
     product_backlog_stories = RbStory.product_backlog(@project)
+    @product_backlog = { :sprint => nil, :stories => product_backlog_stories }
 
     #collect all sprints which are sharing into @project
     sprints = @project.open_shared_sprints
-
-    #TIB (ajout des sprints fermés)
-    c_sprints = @project.closed_shared_sprints
-
-    last_story = RbStory.find(
-                          :first,
-                          :conditions => ["project_id=? AND tracker_id in (?)", @project.id, RbStory.trackers],
-                          :order => "updated_on DESC"
-                          )
-    @last_update = (last_story ? last_story.updated_on : nil)
-    @product_backlog = { :sprint => nil, :stories => product_backlog_stories }
-    sprints_backlog_storie_of = RbStory.backlogs_by_sprint(@project, [sprints, c_sprints].flatten)
-    @sprint_backlogs = sprints.map{ |s| { :sprint => s, :stories => sprints_backlog_storie_of[s.id] } }.reverse
-    @c_sprint_backlogs = c_sprints.map{|s| { :sprint => s, :stories => sprints_backlog_storie_of[s.id] } }
+    @sprint_backlogs = RbStory.backlogs_by_sprint(@project, sprints)
 
     releases = @project.open_releases_by_date
-    releases_backlog_storie_of = RbStory.backlogs_by_release(@project, releases)
-    @release_backlogs = releases.map{ |r| { :release => r, :stories => releases_backlog_storie_of[r.id] } }
+    @release_backlogs = RbStory.backlogs_by_release(@project, releases)
+
+    @last_update = [product_backlog_stories,
+      @sprint_backlogs.map{|s| s[:stories]},
+      @release_backlogs.map{|r| r[:releases]}
+      ].flatten.compact.map{|s| s.updated_on}.sort.last
 
     respond_to do |format|
       format.html { render :layout => "rb"}
@@ -40,6 +32,7 @@ class RbMasterBacklogsController < RbApplicationController
     if @settings[:sharing_enabled]
       # FIXME: (pa sharing) usability is bad, menu is inconsistent. Sometimes we have a submenu with one entry, sometimes we have non-sharing behavior without submenu
       if @sprint #menu for sprint
+        return [] unless @sprint.status == 'open' #closed/locked versions are not assignable versions
         projects = @sprint.shared_to_projects(@project)
       elsif @release #menu for release
         projects = @release.shared_to_projects(@project)
@@ -117,4 +110,13 @@ class RbMasterBacklogsController < RbApplicationController
       @template
     end
   end
+
+  def closed_sprints
+    c_sprints = @project.closed_shared_sprints
+    @backlogs = RbStory.backlogs_by_sprint(@project, c_sprints)
+    respond_to do |format|
+      format.html { render :partial => 'closedbacklog', :collection => @backlogs }
+    end
+  end
+
 end

@@ -24,6 +24,8 @@ def rb_common_routes(rb)
                :to => 'rb_releases#destroy', :via => [:delete]
   rb_match rb, 'release/:release_id/edit',
                :to => 'rb_releases#edit', :via => [:get, :post]
+  rb_match rb, 'release/:release_id/update',
+               :to => 'rb_releases#update', :via => [:put]
   rb_match rb, 'release/:release_id/shapshot',
                :to => 'rb_releases#snapshot', :via => [:get]
 
@@ -61,6 +63,7 @@ def rb_common_routes(rb)
                :to => 'rb_master_backlogs#show'
   rb_match rb, 'master_backlog/:project_id/menu',
                :to => 'rb_master_backlogs#menu'
+  rb_match rb, 'master_backlog/:project_id/closed_sprints', :to => 'rb_master_backlogs#closed_sprints'
 
   rb_match rb, 'impediment/create', :to => 'rb_impediments#create'
   rb_match rb, 'impediment/update/:id', :to => 'rb_impediments#update'
@@ -75,6 +78,7 @@ def rb_common_routes(rb)
   rb_match rb, 'stories/:project_id.pdf', :to => 'rb_stories#index', :format => 'pdf'
   rb_match rb, 'story/create', :to => 'rb_stories#create'
   rb_match rb, 'story/update/:id', :to => 'rb_stories#update'
+  rb_match rb, 'story/:id/tooltip', :to => 'rb_stories#tooltip'
 
   rb_match rb, 'calendar/:key/:project_id.ics', :to => 'rb_calendars#ical',
           :format => 'xml'
@@ -99,6 +103,7 @@ ActionController::Routing::Routes.draw do |map|
     rb.resource   :task,             :except => :index,             :controller => :rb_tasks,           :as => "task/:id"
     rb.resources  :tasks,            :only => :index,               :controller => :rb_tasks,           :as => "tasks/:story_id"
     rb.resource   :taskboard,        :only => :show,                :controller => :rb_taskboards,      :as => "taskboards/:sprint_id"
+    rb.resource   :taskboard,        :only => :current,             :controller => :rb_taskboards,      :as => "projects/:project_id/taskboard"
 
     rb_common_routes rb
   end
@@ -123,6 +128,8 @@ else
 
   rb_match rb, 'taskboards/:sprint_id',
             :to => 'rb_taskboards#show'
+  rb_match rb, 'projects/:project_id/taskboard',
+            :to => 'rb_taskboards#current'
   end
 end
 
