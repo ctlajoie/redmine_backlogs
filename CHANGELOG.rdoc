@@ -1,3 +1,95 @@
+== 2013-07-31 v1.0.5
+
+* Performance improvement on loading master backlog and taskboard
+* Translations
+* Unittests for default story tracker (thanks to stefan-langenmaier)
+
+More details:
+* Issue #27131: Change le termes dans le backlogs plugin.
+* Sort all locales using rails_locale_sorter
+* Moving check for sharing type first in sql query seems to help databases avoid costly subselects if unnecessary. It was quite bad on performance when adding new sprints. (see "Slow project.js / app/views/show.js.erb" and "Performance of back log and board")
+* Optimized SQL for droppable sprints/releases on master backlog. (Big performance improvement related to "Slow project.js / app/views/show.js.erb" and "Performance of back log and board")
+* Utilize SQL for fetching release/sprint shared to projects. Huge improvement for "optimize loading time: preload menus" and improvement on total loading time for "Slow project.js / app/views/show.js.erb" and "Performance of back log and board".
+* Change master backlog/taskboard tests related to default story tracker and other select fields into tests using full javascript stack.
+* Allow other tests to create stories without specifying tracker.
+* Remove issues assigned to release from product backlog query on issues tab. ("Product Backlog on Issues page query is wrong")
+* enhanced the taskboard tests for assigned users
+* Issue 27131: fix french translation
+* added some tests on the taskboard
+
+== 2013-07-25 v1.0.4
+
+* RM 2.3.2 supported
+* Ability to choose default story tracker (thanks to stefan-langenmaier)
+* Add releases to time report criteria.
+* Fix for only showing visible project in scrum statistics.
+* Setting for always showing priority field on taskboard (thanks to dpogue)
+* Show shared releases in Release-tab.
+* Integration with redmine header as default.
+* Translations
+
+More details:
+* Collect release_id information from parent issues to get the correct sum of hours for the time report view in redmine.
+* fix typos in spanish translation
+* Change travis to use RM 2.3.2
+* Fix select fields regression on master backlog/taskboard after merging "Issue #27130 : default story tracker".
+* Issue #27130 : default story tracker
+* Issue #27131 : Change les termes dans le backlogs plugin
+* Issue #27131 : Change les termes dans le backlogs plugin
+* Issue 27145: Force scrollbar
+* Bugfix for only showing visible projects in scrum statistics. Possibly related to "Scrum Statistics: mysql2 SQL syntax error".
+* Minor performance improvements for rb_server_variables. See "Slow project.js / app/views/show.js.erb".
+* Fix deprecation warnings.
+* Update Japanese locale
+* Refactoring ja.yml's order same as en.yml.
+* Add releases to time report criteria. See "time_entries/report allow Releases to be a criteria in the filter.".
+* Give the setting a default of nil.
+* Stub the priority string in other locales.
+* Add a setting to always show task priority.
+* Enable integration with redmine header as default. Fixes "Enable integration with redmine header as default".
+* Show shared releases in Release-tab.
+
+== 2013-06-20 v1.0.3
+
+* Fix JSON issue where remaining hours is reset when attribute is not in params array.
+* Bulk edit release attributes across projects.
+* Change release sidebar links to lead to an issue query. See "Releases sidebar links should lead to a query on issues page".
+* Allow administrators DnD for all roles on taskboard. See "Can't move any feature as administrator".
+
+== 2013-05-29 v1.0.2
+
+* RM 2.3.1 supported
+* Fixes for release column in RM issue queries
+* Release burnchart performance improvement (cached are now much faster, generating when cache is invalid is still rather slow)
+* Merged pull request for JSON export (#918)
+* Translation update
+* Lock version 0.4.7 of faye-websocket to stay compatible with poltergeist (for development)
+
+== 2013-05-04 v1.0.1
+
+* Only update release_id column when migrating releases. Should sort out "undefined method `release_relationship' for #<Issue:0xaf465a0> when upgrading to v1.0.0"
+
+== 2013-04-30 v1.0.0
+
+* Redmine 2.3.0 compatibiliy
+** Issue queries refactored
+* Release graph (experimental support)
+** Release relationship adjustment (auto,added,continued)
+** Trendlines for scope changes and closed points within release
+* REST API (add release/story point to XML/JSON output)
+* Translations
+* Backlogs settings usability
+** Only show project setting 'show stories from subprojects in backlog' when sharing is enabled.
+** Move show project name setting into backlog page fieldset
+* UI fixes
+* Ensure project_id is always passed when creating stories in the master backlog.
+
+== 2013-03-22 v0.9.38
+
+* rails 3.2.13
+* redmine 2.2.4 security release
+* redmine 2.3.0 compatibiliy
+
 == 2013-03-15 v0.9.37
 
 * Speed improvements on the backlog page

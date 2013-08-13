@@ -1,4 +1,8 @@
-require_dependency 'query'
+if (Redmine::VERSION::MAJOR > 2) || (Redmine::VERSION::MAJOR == 2 && Redmine::VERSION::MINOR >= 3)
+  require_dependency 'issue_query'
+else
+  require_dependency 'query'
+end
 require 'erb'
 
 module Backlogs
@@ -12,7 +16,7 @@ module Backlogs
     end
   end
 
-  module QueryPatch
+  module IssueQueryPatch
     def self.included(base) # :nodoc:
       base.extend(ClassMethods)
       base.send(:include, InstanceMethods)
@@ -28,10 +32,27 @@ module Backlogs
 
         alias_method_chain :available_filters, :backlogs_issue_type
         alias_method_chain :sql_for_field, :backlogs_issue_type
+        alias_method_chain :joins_for_order_statement, :backlogs_issue_type
       end
     end
 
     module InstanceMethods
+      def joins_for_order_statement_with_backlogs_issue_type(order_options)
+        joins = joins_for_order_statement_without_backlogs_issue_type(order_options)
+        if order_options
+          if order_options.include?("#{RbRelease.table_name}")
+            joins = "" if joins.nil?
+            if (Redmine::VERSION::MAJOR > 2) || (Redmine::VERSION::MAJOR == 2 && Redmine::VERSION::MINOR >= 3)
+              joins += " LEFT OUTER JOIN #{RbRelease.table_name} ON #{RbRelease.table_name}.id = #{queried_table_name}.release_id"
+            else
+              joins += " LEFT OUTER JOIN #{RbRelease.table_name} ON #{RbRelease.table_name}.id = #{Issue.table_name}.release_id"
+            end
+          end
+        end
+
+        joins
+      end
+
       def available_filters_with_backlogs_issue_type
         @available_filters = available_filters_without_backlogs_issue_type
 
@@ -120,4 +141,8 @@ module Backlogs
   end
 end
 
-Query.send(:include, Backlogs::QueryPatch) unless Query.included_modules.include? Backlogs::QueryPatch
+if (Redmine::VERSION::MAJOR > 2) || (Redmine::VERSION::MAJOR == 2 && Redmine::VERSION::MINOR >= 3)
+  IssueQuery.send(:include, Backlogs::IssueQueryPatch) unless IssueQuery.included_modules.include? Backlogs::IssueQueryPatch
+else
+  Query.send(:include, Backlogs::IssueQueryPatch) unless Query.included_modules.include? Backlogs::IssueQueryPatch
+end

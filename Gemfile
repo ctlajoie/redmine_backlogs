@@ -10,7 +10,7 @@ RAILS_VERSION_IS_3 = rails3 =~ deps['rails']
 
 gem "holidays", "~>1.0.3"
 gem "icalendar"
-gem "nokogiri"
+gem "nokogiri", "< 1.6.0"
 gem "open-uri-cached"
 gem "prawn"
 gem 'json'
@@ -27,6 +27,7 @@ group :test do
   if RAILS_VERSION_IS_3
     unless chiliproject
       gem 'capybara', "~> 1.1" if ENV['IN_RBL_TESTENV'] == 'true' # redmine 2.3 conflicts
+      gem "faye-websocket", "~>0.4.7"
       gem "poltergeist", "~>1.0"
     end
     gem 'cucumber-rails'

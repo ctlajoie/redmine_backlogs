@@ -116,3 +116,32 @@ Feature: Release management
       And I should see 1 stories in the sprint backlog of Sprint 001
       And I should see 1 stories in the sprint backlog of Sprint 002
       And I should see 2 stories in the sprint backlog of Sprint 003
+
+  Scenario: View issues grouped by releases
+    Given I view issues tab grouped by releases
+     Then I should see "Rel 1" group in the issues list
+     Then I should see "Rel 2" group in the issues list
+
+  @javascript
+  Scenario: Go to a release backlog query using the issues sidebar
+    Given I am viewing the issues list
+     Then I should see "Rel 1" within "#sidebar"
+     When I follow "Rel 1"
+      And I should see "Issues" within "#content"
+      And I should see "Story A" within "#content"
+      And I should see "Story B" within "#content"
+      And I should not see "Story C" within "#content"
+
+  Scenario: Bulk edit issue's release attributes
+    Given I am viewing the issues list
+      And I want to bulk edit "Story A" and "Story B"
+      And I want to set the release to "Rel 2"
+      And I want to set the release relationship to Initial
+     When I update the stories
+      Then story "Story A" should have release "Rel 2"
+      Then story "Story B" should have release "Rel 2"
+      Then story "Story A" should have release relationship Initial
+      Then story "Story B" should have release relationship Initial
+
+# FIXME Scenario: Bulk edit release attributes across projects
+# FIXME Scenario: Shared releases

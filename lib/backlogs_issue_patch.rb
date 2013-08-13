@@ -14,8 +14,12 @@ module Backlogs
         acts_as_list_with_gaps :default => (Backlogs.setting[:new_story_position] == 'bottom' ? 'bottom' : 'top')
 
         has_one :backlogs_history, :class_name => RbIssueHistory, :dependent => :destroy
+        has_many :rb_release_burnchart_day_cache, :dependent => :delete_all
 
-        safe_attributes 'release_id' #FIXME merge conflict. is this required?
+
+        validates_inclusion_of :release_relationship, :in => RbStory::RELEASE_RELATIONSHIP
+
+        safe_attributes 'release_id','release_relationship' #FIXME merge conflict. is this required?
 
         before_save :backlogs_before_save
         after_save  :backlogs_after_save
@@ -30,6 +34,10 @@ module Backlogs
     module InstanceMethods
       def history
         @history ||= RbIssueHistory.find_or_create_by_issue_id(self.id)
+      end
+
+      def release_burnchart_day_caches(release_id)
+        RbReleaseBurnchartDayCache.where(:issue_id => self.id, :release_id => release_id)
       end
 
       def is_story?
@@ -125,8 +133,17 @@ module Backlogs
         return true
       end
 
+      def invalidate_release_burnchart_data
+        RbReleaseBurnchartDayCache.delete_all(["issue_id = ? AND day >= ?",self.id,Date.today])
+        #FIXME Missing cleanup of older cache entries which is no longer
+        # valid for any releases. Delete cache entries not related to
+        # current release?
+      end
+
       def backlogs_after_save
         self.history.save!
+        self.invalidate_release_burnchart_data
+
         [self.parent_id, self.parent_id_was].compact.uniq.each{|pid|
           p = Issue.find(pid)
           r = p.leaves.sum("COALESCE(remaining_hours, 0)").to_f
