@@ -147,7 +147,7 @@ module Backlogs
 
     def stat_velocity_stddev
       return @velocity_stddev unless @velocity_stddev.is_a? Float
-      return '%.2f' % @velocity_stddev      
+      return '%.2f' % @velocity_stddev
     end
 
     def stat_sizing_stddev
@@ -174,6 +174,7 @@ module Backlogs
       base.class_eval do
         unloadable
         has_many :releases, :class_name => 'RbRelease', :inverse_of => :project, :dependent => :destroy, :order => "#{RbRelease.table_name}.release_start_date DESC, #{RbRelease.table_name}.name DESC"
+        has_many :releases_multiview, :class_name => 'RbReleaseMultiview', :dependent => :destroy
         include Backlogs::ActiveRecord::Attributes
       end
     end
@@ -208,9 +209,9 @@ module Backlogs
         #TODO have an explicit association map which project shares its issues into other product backlogs
       end
 
-      #return sprints which are 
+      #return sprints which are
       # 1. open in project,
-      # 2. share to project, 
+      # 2. share to project,
       # 3. share to project but are scoped to project and subprojects
       #depending on sharing mode
       def open_shared_sprints
@@ -219,7 +220,7 @@ module Backlogs
           shared_versions.visible.scoped(:conditions => {:status => ['open', 'locked']}, :order => "sprint_start_date #{order}, effective_date #{order}").collect{|v| v.becomes(RbSprint) }
         else #no backlog sharing
           RbSprint.open_sprints(self)
-        end 
+        end
       end
 
       #depending on sharing mode
@@ -233,9 +234,10 @@ module Backlogs
       end
 
       def active_sprint
+        time = (Time.zone ? Time.zone : Time).now
         @active_sprint ||= RbSprint.find(:first, :conditions => [
-          "project_id = ? and status = 'open' and not (sprint_start_date is null or effective_date is null) and ? between sprint_start_date and effective_date",
-          self.id, (Time.zone ? Time.zone : Time).now.beginning_of_day
+          "project_id = ? and status = 'open' and not (sprint_start_date is null or effective_date is null) and ? >= sprint_start_date and ? <= effective_date",
+          self.id, time.end_of_day, time.beginning_of_day
         ])
       end
 
@@ -243,14 +245,14 @@ module Backlogs
         order = Backlogs.setting[:sprint_sort_order] == 'desc' ? 'DESC' : 'ASC'
         (Backlogs.setting[:sharing_enabled] ? shared_releases : releases).
           visible.open.
-          order("#{RbRelease.table_name}.release_start_date #{order}, #{RbRelease.table_name}.release_end_date #{order}")
+          order("#{RbRelease.table_name}.release_end_date #{order}, #{RbRelease.table_name}.release_start_date #{order}")
       end
 
       def closed_releases_by_date
         order = Backlogs.setting[:sprint_sort_order] == 'desc' ? 'DESC' : 'ASC'
         (Backlogs.setting[:sharing_enabled] ? shared_releases : releases).
           visible.closed.
-          order("#{RbRelease.table_name}.release_start_date #{order}, #{RbRelease.table_name}.release_end_date #{order}")
+          order("#{RbRelease.table_name}.release_end_date #{order}, #{RbRelease.table_name}.release_start_date #{order}")
       end
 
       def shared_releases
@@ -259,15 +261,17 @@ module Backlogs
                        :conditions => "#{Project.table_name}.status <> #{Project::STATUS_ARCHIVED} AND #{RbRelease.table_name}.sharing = 'system'")
         else
           @shared_releases ||= begin
+            order = Backlogs.setting[:sprint_sort_order] == 'desc' ? 'DESC' : 'ASC'
             r = root? ? self : root
             RbRelease.scoped(:include => :project,
-                         :conditions => "#{Project.table_name}.id = #{id}" +
-              " OR (#{Project.table_name}.status <> #{Project::STATUS_ARCHIVED} AND (" +
-                    " #{RbRelease.table_name}.sharing = 'system'" +
-              " OR (#{Project.table_name}.lft >= #{r.lft} AND #{Project.table_name}.rgt <= #{r.rgt} AND #{RbRelease.table_name}.sharing = 'tree')" +
-              " OR (#{Project.table_name}.lft < #{lft} AND #{Project.table_name}.rgt > #{rgt} AND #{RbRelease.table_name}.sharing IN ('hierarchy', 'descendants'))" +
-              " OR (#{Project.table_name}.lft > #{lft} AND #{Project.table_name}.rgt < #{rgt} AND #{RbRelease.table_name}.sharing = 'hierarchy')" +
-              "))")
+              :conditions => "#{Project.table_name}.id = #{id}" +
+                " OR (#{Project.table_name}.status <> #{Project::STATUS_ARCHIVED} AND (" +
+                  " #{RbRelease.table_name}.sharing = 'system'" +
+                " OR (#{Project.table_name}.lft >= #{r.lft} AND #{Project.table_name}.rgt <= #{r.rgt} AND #{RbRelease.table_name}.sharing = 'tree')" +
+                " OR (#{Project.table_name}.lft < #{lft} AND #{Project.table_name}.rgt > #{rgt} AND #{RbRelease.table_name}.sharing IN ('hierarchy', 'descendants'))" +
+                " OR (#{Project.table_name}.lft > #{lft} AND #{Project.table_name}.rgt < #{rgt} AND #{RbRelease.table_name}.sharing = 'hierarchy')" +
+                "))",
+              :order => "#{RbRelease.table_name}.release_end_date #{order}, #{RbRelease.table_name}.release_start_date #{order}")
           end
         end
       end
@@ -328,6 +332,8 @@ private
           aggregate_list = " GROUP_CONCAT(#{field_name} SEPARATOR ',') as list "
         elsif adapter_name.starts_with? 'postgresql'
           aggregate_list = " array_to_string(array_agg(#{field_name}),',') as list "
+        elsif adapter_name.starts_with? 'sqlite'
+          aggregate_list = " GROUP_CONCAT(#{field_name}) as list "
         else
           raise NotImplementedError, "Unknown adapter '#{adapter_name}'"
         end
